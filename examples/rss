@@ -1,0 +1,41 @@
+#!/usr/bin/env ruby
+
+# To run this file, clone the repo, go to the examples directory and run:
+#
+#     ./rss start -c 10
+
+# This is only for the example to load the gem file inside the project
+$LOAD_PATH << File.expand_path("../../lib", __FILE__)
+
+require "nokogiri"
+require "open-uri"
+require "daemonic"
+
+class FeedWorker
+
+  # some feeds as an example
+  URLS = %w(
+    https://blog.yourkarma.com/rss
+    http://gigaom.com/feed
+  ) * 5
+
+  # The produce method determines what to work on next.
+  # Put the work onto the queue that is passed in.
+  def produce(queue)
+    URLS.each do |url|
+      queue << url
+    end
+  end
+
+  # The consume method does the actual hard work of downloading the feed and parsing it.
+  def consume(message)
+    puts "Downloading #{message}"
+    items = Nokogiri::XML(open(message)).css("item")
+    puts "Processing #{items.size} articles from #{message}"
+  end
+
+end
+
+feed_worker = FeedWorker.new
+
+Daemonic.run(feed_worker)
