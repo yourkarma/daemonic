@@ -1,15 +1,15 @@
 module Daemonic
   class Producer
 
-    attr_reader :worker, :queue, :concurrency, :options
+    attr_reader :worker, :concurrency, :options, :queue_size
 
     def initialize(worker, options)
-      @worker = worker
-      @options = options
+      @worker      = worker
+      @options     = options
       @concurrency = options.fetch(:concurrency) { 4 }
-
-      @queue = SizedQueue.new(concurrency) { concurrency + 1 }
-      @running = true
+      @queue_size  = options.fetch(:queue_size) { @concurrency + 1 }
+      @logger      = options[:logger]
+      @running     = true
     end
 
     def run
@@ -18,7 +18,7 @@ module Daemonic
       Signal.trap("INT") { stop }
       Signal.trap("TERM") { stop }
 
-      pool = Pool.new(concurrency, worker, logger)
+      pool = Pool.new(self)
 
       producer = Thread.new do
         while @running

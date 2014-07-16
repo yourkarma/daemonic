@@ -13,11 +13,12 @@ module Daemonic
 
     STOP_SIGNAL = StopSignal.new
 
-    def initialize(thread_count, worker, logger)
-      @worker  = worker
-      @jobs    = SizedQueue.new(thread_count)
-      @logger  = logger
-      @threads = thread_count.times.map {|worker_num|
+    attr_reader :producer
+
+    def initialize(producer)
+      @producer = producer
+      @jobs    = SizedQueue.new(producer.queue_size)
+      @threads = producer.concurrency.times.map {|worker_num|
         Thread.new do
           dispatch(worker_num)
         end
@@ -25,7 +26,7 @@ module Daemonic
     end
 
     def enqueue(job)
-      @logger.debug { "Enqueueing #{job.inspect}" }
+      logger.debug { "Enqueueing #{job.inspect}" }
       @jobs.push(job)
     end
     alias_method :<<, :enqueue
@@ -40,26 +41,38 @@ module Daemonic
     private
 
     def dispatch(worker_num)
-      @logger.debug { "T#{worker_num}: Starting" }
+      logger.debug { "T#{worker_num}: Starting" }
       loop do
         job = @jobs.pop
         if STOP_SIGNAL.equal?(job)
-          @logger.debug { "T#{worker_num}: Received stop signal, terminating." }
+          logger.debug { "T#{worker_num}: Received stop signal, terminating." }
           break
         end
         begin
-          @logger.debug { "T#{worker_num}: Consuming #{job.inspect}" }
-          @worker.consume(job)
+          logger.debug { "T#{worker_num}: Consuming #{job.inspect}" }
+          worker.consume(job)
           Thread.pass
         rescue Object => error
-          @logger.warn { "T#{worker_num}: Error while processing #{job}: #{error.class}: #{error}" }
-          @logger.info { error.backtrace.join("\n") }
+          if error.is_a?(SystemExit) # allow app to exit
+            logger.warn { "T#{worker_num}: Received SystemExit, shutting down" }
+            producer.stop
+          else
+            logger.warn { "T#{worker_num}: #{error.class} while processing #{job}: #{error}" }
+            logger.info { error.backtrace.join("\n") }
+          end
           Thread.pass
         end
       end
-      @logger.debug { "T#{worker_num}: Stopped" }
+      logger.debug { "T#{worker_num}: Stopped" }
     end
 
+    def worker
+      producer.worker
+    end
+
+    def logger
+      producer.logger
+    end
 
   end
 end
