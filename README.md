@@ -47,9 +47,7 @@ class FeedWorker
 
 end
 
-feed_worker = FeedWorker.new
-
-Daemonic.run(feed_worker)
+Daemonic.run { FeedWorker.new }
 ```
 
 Make the file executable:
@@ -101,7 +99,7 @@ multi-threaded daemon:
 * Create an executable.
 * Require daemonic.
 * Require your own worker.
-* End the executable with `Daemonic.run(my_worker)`.
+* End the executable with `Daemonic.run { my_worker }`.
 
 You can get help, by running the script you created:
 

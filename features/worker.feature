@@ -22,9 +22,7 @@ Feature: Worker
 
       end
 
-      worker = MyWorker.new
-
-      Daemonic.run(worker)
+      Daemonic.run { MyWorker.new }
       """
 
     When I run `./worker start --daemonize --pid tmp/worker.pid`
