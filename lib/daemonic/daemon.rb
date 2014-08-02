@@ -88,7 +88,7 @@ module Daemonic
     end
 
     def cleanup_pid_file
-      File.unlink(pid_file) if pid_file
+      File.unlink(pid_file) if pid_file && File.exist?(pid_file) 
     end
 
     def write_pid_file
