@@ -25,13 +25,13 @@ Feature: Worker
       Daemonic.run { MyWorker.new }
       """
 
-    When I run `./worker start --daemonize --pid tmp/worker.pid`
+    When I run `./worker start --daemonize --pid tmp/worker.pid --log test.log`
     Then the exit status should be 0
 
     When I run `./worker status --pid tmp/worker.pid`
     Then the exit status should be 0
 
-    When I run `./worker restart --pid tmp/worker.pid`
+    When I run `./worker restart --pid tmp/worker.pid --log test.log`
     Then the exit status should be 0
 
     When I run `./worker stop --pid tmp/worker.pid`
